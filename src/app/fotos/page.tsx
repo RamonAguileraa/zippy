@@ -93,7 +93,7 @@ export default function FotosPage() {
             <div className="flex items-center gap-4">
               <Image
                 src="/zippy logo.png"
-                alt="Zippi Logo"
+                alt="Zippy Logo"
                 width={60}
                 height={60}
                 className="w-15 h-15"

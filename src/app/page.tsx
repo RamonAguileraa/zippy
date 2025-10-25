@@ -141,14 +141,14 @@ export default function Home() {
             <div className="flex items-center gap-4">
               <Image
                 src="/zippy logo.png?v=1"
-                alt="Zippi Logo"
+                alt="Zippy Logo"
                 width={80}
                 height={80}
                 className="w-20 h-20"
               />
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Zippi
+                  Zippy
                 </h1>
                 <p className="mt-2 text-gray-600">
                   Aprendiendo Finanzas - Panel del Profesor
