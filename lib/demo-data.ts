@@ -44,14 +44,6 @@ const demoAlumnos: AlumnoConFoto[] = [
     CodigoQR: '5',
     fecha_movimiento: new Date(),
     foto_url: '/zippy logo.png'
-  },
-  {
-    id_usuario: 13,
-    NombreCompleto: 'Jesús Emilio Zubía Valdez',
-    dinero_disponible: 100.00,
-    CodigoQR: '13',
-    fecha_movimiento: new Date(),
-    foto_url: '/zippy logo.png'
   }
 ];
 
