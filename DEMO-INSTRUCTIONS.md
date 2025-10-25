@@ -33,6 +33,9 @@ npm run dev
 
 ### 4. Funcionalidades Adicionales
 - **Crear nuevo alumno**: Con foto y saldo inicial
+  - Al crear un alumno nuevo, seleccionar foto
+  - La foto se guarda automáticamente en memoria
+  - Se muestra inmediatamente en la lista de alumnos
 - **Escanear QR**: Usar el código QR del alumno
 - **Gestión de fotos**: Subir, ver, cambiar fotos
 

@@ -5,7 +5,8 @@ import {
   getAllAlumnosDemo,
   getAlumnoByIdDemo,
   updateDineroDisponibleDemo,
-  createAlumnoDemo
+  createAlumnoDemo,
+  guardarFotoDemo
 } from './demo-data';
 
 // Configuración de base de datos
@@ -122,7 +123,14 @@ export async function createAlumno(
   fotoPerfil?: Buffer
 ): Promise<AlumnoConFoto | null> {
   if (DEMO_MODE) {
-    return createAlumnoDemo(nombreCompleto, dineroInicial);
+    const nuevoAlumno = await createAlumnoDemo(nombreCompleto, dineroInicial);
+    
+    // Si hay foto, guardarla en memoria
+    if (fotoPerfil && nuevoAlumno) {
+      guardarFotoDemo(nuevoAlumno.id_usuario, fotoPerfil);
+    }
+    
+    return nuevoAlumno;
   }
   
   try {
