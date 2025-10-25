@@ -5,7 +5,7 @@ export interface Alumno {
   dinero_disponible: number;
   CodigoQR: string;  // Integer ID as string (for QR scanning)
   fecha_movimiento: Date;
-  Foto_perfil: string;
+  Foto_perfil?: string;
 }
 
 // Interface for localStorage users (simplified structure)

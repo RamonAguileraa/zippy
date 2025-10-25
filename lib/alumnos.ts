@@ -1,5 +1,18 @@
 import getPool from './database';
-import { Alumno, AlumnoConFoto } from './types';
+import { AlumnoConFoto } from './types';
+
+interface AlumnoRow {
+  id_usuario: number;
+  NombreCompleto: string;
+  dinero_disponible: number;
+  CodigoQR: string;
+  fecha_movimiento: Date;
+  tiene_foto: number;
+}
+
+interface InsertResult {
+  insertId: number;
+}
 
 // Obtener todos los alumnos
 export async function getAllAlumnos(): Promise<AlumnoConFoto[]> {
@@ -9,7 +22,7 @@ export async function getAllAlumnos(): Promise<AlumnoConFoto[]> {
       'SELECT id_usuario, NombreCompleto, dinero_disponible, CodigoQR, fecha_movimiento, CASE WHEN Foto_perfil IS NOT NULL THEN 1 ELSE 0 END as tiene_foto FROM usuarios_tb ORDER BY NombreCompleto ASC'
     );
     
-    const alumnos = rows as any[];
+    const alumnos = rows as AlumnoRow[];
     
     // Agregar URL de la foto de perfil
     return alumnos.map(alumno => ({
@@ -35,7 +48,7 @@ export async function getAlumnoById(id: number): Promise<AlumnoConFoto | null> {
       [id]
     );
     
-    const alumnos = rows as any[];
+    const alumnos = rows as AlumnoRow[];
     if (alumnos.length === 0) return null;
     
     const alumno = alumnos[0];
@@ -85,7 +98,7 @@ export async function createAlumno(
       );
 
       // Get the generated ID
-      const insertResult = result as any;
+      const insertResult = result as InsertResult;
       const generatedId = insertResult.insertId;
 
       // Update CodigoQR with the generated ID
@@ -100,7 +113,7 @@ export async function createAlumno(
         [generatedId]
       );
 
-      const alumnos = rows as any[];
+      const alumnos = rows as AlumnoRow[];
       if (alumnos.length === 0) return null;
 
       const alumno = alumnos[0];
