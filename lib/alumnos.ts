@@ -1,4 +1,5 @@
-import getPool from './database';
+import getPoolMySQL from './database';
+import getPoolSupabase from './database-supabase';
 import { AlumnoConFoto } from './types';
 import {
   getAllAlumnosDemo,
@@ -7,8 +8,29 @@ import {
   createAlumnoDemo
 } from './demo-data';
 
-// Modo DEMO: usar datos en memoria en lugar de base de datos
+// Configuración de base de datos
 const DEMO_MODE = process.env.DEMO_MODE === 'true' || true; // Activar modo demo por defecto
+const USE_SUPABASE = process.env.USE_SUPABASE === 'true';
+
+// Seleccionar el pool correcto
+function getPool() {
+  if (USE_SUPABASE) {
+    return getPoolSupabase();
+  }
+  return getPoolMySQL();
+}
+
+// Helper para ejecutar queries compatibles con MySQL y PostgreSQL
+async function executeQuery(sql: string, params?: any[]) {
+  const pool = getPool();
+  if (USE_SUPABASE) {
+    // PostgreSQL usa ? para parámetros igual que MySQL
+    const result = await pool.query(sql, params);
+    return [result.rows, result];
+  } else {
+    return await pool.execute(sql, params);
+  }
+}
 
 interface AlumnoRow {
   id_usuario: number;
@@ -31,8 +53,7 @@ export async function getAllAlumnos(): Promise<AlumnoConFoto[]> {
   }
   
   try {
-    const pool = getPool();
-    const [rows] = await pool.execute(
+    const [rows] = await executeQuery(
       'SELECT id_usuario, NombreCompleto, dinero_disponible, CodigoQR, fecha_movimiento, CASE WHEN Foto_perfil IS NOT NULL THEN 1 ELSE 0 END as tiene_foto FROM usuarios_tb ORDER BY NombreCompleto ASC'
     );
     
