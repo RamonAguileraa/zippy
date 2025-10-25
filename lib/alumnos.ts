@@ -12,22 +12,15 @@ import {
 const DEMO_MODE = process.env.DEMO_MODE === 'true' || true; // Activar modo demo por defecto
 const USE_SUPABASE = process.env.USE_SUPABASE === 'true';
 
-// Seleccionar el pool correcto
-function getPool() {
-  if (USE_SUPABASE) {
-    return getPoolSupabase();
-  }
-  return getPoolMySQL();
-}
-
 // Helper para ejecutar queries compatibles con MySQL y PostgreSQL
-async function executeQuery(sql: string, params?: any[]) {
-  const pool = getPool();
+async function executeQuery(sql: string, params?: unknown[]) {
   if (USE_SUPABASE) {
+    const pool = getPoolSupabase();
     // PostgreSQL usa ? para parámetros igual que MySQL
     const result = await pool.query(sql, params);
-    return [result.rows, result];
+    return [result.rows, result] as const;
   } else {
+    const pool = getPoolMySQL();
     return await pool.execute(sql, params);
   }
 }
@@ -81,8 +74,7 @@ export async function getAlumnoById(id: number): Promise<AlumnoConFoto | null> {
   }
   
   try {
-    const pool = getPool();
-    const [rows] = await pool.execute(
+    const [rows] = await executeQuery(
       'SELECT id_usuario, NombreCompleto, dinero_disponible, CodigoQR, fecha_movimiento, CASE WHEN Foto_perfil IS NOT NULL THEN 1 ELSE 0 END as tiene_foto FROM usuarios_tb WHERE id_usuario = ?',
       [id]
     );
@@ -112,8 +104,7 @@ export async function updateDineroDisponible(id: number, nuevoMonto: number): Pr
   }
   
   try {
-    const pool = getPool();
-    await pool.execute(
+    await executeQuery(
       'UPDATE usuarios_tb SET dinero_disponible = ?, fecha_movimiento = NOW() WHERE id_usuario = ?',
       [nuevoMonto, id]
     );
@@ -135,46 +126,60 @@ export async function createAlumno(
   }
   
   try {
-    const pool = getPool();
-    const connection = await pool.getConnection();
-    try {
-      // Insertar nuevo alumno (let AUTO_INCREMENT handle the ID)
-      const [result] = await connection.execute(
-        'INSERT INTO usuarios_tb (NombreCompleto, dinero_disponible, CodigoQR, fecha_movimiento, Foto_perfil) VALUES (?, ?, ?, NOW(), ?)',
-        [nombreCompleto, dineroInicial, '', fotoPerfil || null] // CodigoQR will be updated after getting the generated ID
+    if (USE_SUPABASE) {
+      // PostgreSQL: Insertar con RETURNING para obtener el ID
+      const result = await executeQuery(
+        'INSERT INTO usuarios_tb (NombreCompleto, dinero_disponible, CodigoQR, fecha_movimiento, Foto_perfil) VALUES (?, ?, ?, NOW(), ?) RETURNING id_usuario',
+        [nombreCompleto, dineroInicial, '', fotoPerfil || null]
       );
-
-      // Get the generated ID
-      const insertResult = result as InsertResult;
-      const generatedId = insertResult.insertId;
-
-      // Update CodigoQR with the generated ID
-      await connection.execute(
+      
+      // @ts-expect-error - Los tipos están bien pero TypeScript no los infiere correctamente
+      const generatedId = result[0][0].id_usuario;
+      
+      // Actualizar CodigoQR
+      await executeQuery(
         'UPDATE usuarios_tb SET CodigoQR = ? WHERE id_usuario = ?',
         [generatedId.toString(), generatedId]
       );
+    } else {
+      // MySQL: Insertar nuevo alumno (let AUTO_INCREMENT handle the ID)
+      const pool = getPoolMySQL();
+      const connection = await pool.getConnection();
+      try {
+        const [result] = await connection.execute(
+          'INSERT INTO usuarios_tb (NombreCompleto, dinero_disponible, CodigoQR, fecha_movimiento, Foto_perfil) VALUES (?, ?, ?, NOW(), ?)',
+          [nombreCompleto, dineroInicial, '', fotoPerfil || null]
+        );
 
-      // Obtener el alumno creado usando el ID generado
-      const [rows] = await connection.execute(
-        'SELECT id_usuario, NombreCompleto, dinero_disponible, CodigoQR, fecha_movimiento, CASE WHEN Foto_perfil IS NOT NULL THEN 1 ELSE 0 END as tiene_foto FROM usuarios_tb WHERE id_usuario = ?',
-        [generatedId]
-      );
+        const insertResult = result as InsertResult;
+        const generatedId = insertResult.insertId;
 
-      const alumnos = rows as AlumnoRow[];
-      if (alumnos.length === 0) return null;
-
-      const alumno = alumnos[0];
-      return {
-        id_usuario: alumno.id_usuario,
-        NombreCompleto: alumno.NombreCompleto,
-        dinero_disponible: alumno.dinero_disponible,
-        CodigoQR: alumno.CodigoQR,
-        fecha_movimiento: alumno.fecha_movimiento,
-        foto_url: alumno.tiene_foto ? `/api/image/${alumno.id_usuario}` : '/zippy logo.png'
-      };
-    } finally {
-      connection.release();
+        await connection.execute(
+          'UPDATE usuarios_tb SET CodigoQR = ? WHERE id_usuario = ?',
+          [generatedId.toString(), generatedId]
+        );
+      } finally {
+        connection.release();
+      }
     }
+    
+    // Obtener el alumno creado (usamos executeQuery para compatibilidad)
+    const [rows] = await executeQuery(
+      'SELECT id_usuario, NombreCompleto, dinero_disponible, CodigoQR, fecha_movimiento, CASE WHEN Foto_perfil IS NOT NULL THEN 1 ELSE 0 END as tiene_foto FROM usuarios_tb ORDER BY id_usuario DESC LIMIT 1'
+    );
+    
+    const alumnos = rows as AlumnoRow[];
+    if (alumnos.length === 0) return null;
+
+    const alumno = alumnos[0];
+    return {
+      id_usuario: alumno.id_usuario,
+      NombreCompleto: alumno.NombreCompleto,
+      dinero_disponible: alumno.dinero_disponible,
+      CodigoQR: alumno.CodigoQR,
+      fecha_movimiento: alumno.fecha_movimiento,
+      foto_url: alumno.tiene_foto ? `/api/image/${alumno.id_usuario}` : '/zippy logo.png'
+    };
   } catch (error) {
     console.error('Error creando alumno:', error);
     throw error;
