@@ -1,5 +1,8 @@
 import { AlumnoConFoto } from './types';
 
+// Almacenamiento de fotos en memoria para modo demo
+const demoFotos: Map<number, Buffer> = new Map();
+
 // Datos demo en memoria
 const demoAlumnos: AlumnoConFoto[] = [
   {
@@ -84,4 +87,24 @@ export async function createAlumnoDemo(
   };
   demoAlumnos.push(nuevoAlumno);
   return nuevoAlumno;
+}
+
+// Funciones para manejar fotos en modo demo
+export function guardarFotoDemo(alumnoId: number, fotoBuffer: Buffer): boolean {
+  try {
+    demoFotos.set(alumnoId, fotoBuffer);
+    console.log(`📸 Demo: Foto guardada para alumno ${alumnoId}`);
+    return true;
+  } catch (error) {
+    console.error('Error guardando foto demo:', error);
+    return false;
+  }
+}
+
+export function obtenerFotoDemo(alumnoId: number): Buffer | null {
+  return demoFotos.get(alumnoId) || null;
+}
+
+export function tieneFotoDemo(alumnoId: number): boolean {
+  return demoFotos.has(alumnoId);
 }

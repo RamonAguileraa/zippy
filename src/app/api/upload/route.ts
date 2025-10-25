@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getPoolMySQL from '../../../../lib/database';
 import getPoolSupabase from '../../../../lib/database-supabase';
+import { guardarFotoDemo } from '../../../../lib/demo-data';
 
 const DEMO_MODE = process.env.DEMO_MODE === 'true' || true;
 const USE_SUPABASE = process.env.USE_SUPABASE === 'true';
@@ -35,13 +36,22 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // En modo DEMO, simular que se guardó
+    // En modo DEMO, guardar en memoria
     if (DEMO_MODE) {
-      console.log(`📸 Modo DEMO: Foto simulada para alumno ${alumnoId}`);
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Foto simulada en modo demo' 
-      });
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const guardado = guardarFotoDemo(parseInt(alumnoId), buffer);
+      
+      if (guardado) {
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Foto guardada en modo demo' 
+        });
+      } else {
+        return NextResponse.json({ 
+          error: 'Error guardando foto en modo demo' 
+        }, { status: 500 });
+      }
     }
 
     const bytes = await file.arrayBuffer();

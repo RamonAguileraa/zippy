@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import getPoolMySQL from '../../../../../lib/database';
 import getPoolSupabase from '../../../../../lib/database-supabase';
+import { obtenerFotoDemo } from '../../../../../lib/demo-data';
 
 const DEMO_MODE = process.env.DEMO_MODE === 'true' || true;
 const USE_SUPABASE = process.env.USE_SUPABASE === 'true';
@@ -16,9 +17,32 @@ export async function GET(
       return new NextResponse('ID de alumno inválido. Debe ser un número entero positivo.', { status: 400 });
     }
 
-    // En modo DEMO, devolver imagen de placeholder
+    // En modo DEMO, obtener foto de memoria o mostrar placeholder
     if (DEMO_MODE) {
-      return NextResponse.redirect(new URL('/zippy logo.png', request.url));
+      const fotoBuffer = obtenerFotoDemo(alumnoId);
+      if (fotoBuffer) {
+        // Determinar el tipo de contenido basado en los primeros bytes
+        let contentType = 'image/jpeg'; // Por defecto
+        if (fotoBuffer.length >= 4) {
+          const header = fotoBuffer.subarray(0, 4);
+          if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4E && header[3] === 0x47) {
+            contentType = 'image/png';
+          } else if (header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46) {
+            contentType = 'image/gif';
+          }
+        }
+
+        return new NextResponse(new Uint8Array(fotoBuffer), {
+          status: 200,
+          headers: {
+            'Content-Type': contentType,
+            'Cache-Control': 'public, max-age=31536000',
+          },
+        });
+      } else {
+        // Si no hay foto guardada, mostrar placeholder
+        return NextResponse.redirect(new URL('/zippy logo.png', request.url));
+      }
     }
 
     let imageBuffer: Buffer;
