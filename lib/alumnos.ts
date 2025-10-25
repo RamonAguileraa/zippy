@@ -1,5 +1,14 @@
 import getPool from './database';
 import { AlumnoConFoto } from './types';
+import {
+  getAllAlumnosDemo,
+  getAlumnoByIdDemo,
+  updateDineroDisponibleDemo,
+  createAlumnoDemo
+} from './demo-data';
+
+// Modo DEMO: usar datos en memoria en lugar de base de datos
+const DEMO_MODE = process.env.DEMO_MODE === 'true' || true; // Activar modo demo por defecto
 
 interface AlumnoRow {
   id_usuario: number;
@@ -16,6 +25,11 @@ interface InsertResult {
 
 // Obtener todos los alumnos
 export async function getAllAlumnos(): Promise<AlumnoConFoto[]> {
+  if (DEMO_MODE) {
+    console.log('🔧 Modo DEMO activado - usando datos en memoria');
+    return getAllAlumnosDemo();
+  }
+  
   try {
     const pool = getPool();
     const [rows] = await pool.execute(
@@ -41,6 +55,10 @@ export async function getAllAlumnos(): Promise<AlumnoConFoto[]> {
 
 // Obtener un alumno por ID
 export async function getAlumnoById(id: number): Promise<AlumnoConFoto | null> {
+  if (DEMO_MODE) {
+    return getAlumnoByIdDemo(id);
+  }
+  
   try {
     const pool = getPool();
     const [rows] = await pool.execute(
@@ -68,6 +86,10 @@ export async function getAlumnoById(id: number): Promise<AlumnoConFoto | null> {
 
 // Actualizar dinero disponible de un alumno
 export async function updateDineroDisponible(id: number, nuevoMonto: number): Promise<boolean> {
+  if (DEMO_MODE) {
+    return updateDineroDisponibleDemo(id, nuevoMonto);
+  }
+  
   try {
     const pool = getPool();
     await pool.execute(
@@ -87,6 +109,10 @@ export async function createAlumno(
   dineroInicial: number, 
   fotoPerfil?: Buffer
 ): Promise<AlumnoConFoto | null> {
+  if (DEMO_MODE) {
+    return createAlumnoDemo(nombreCompleto, dineroInicial);
+  }
+  
   try {
     const pool = getPool();
     const connection = await pool.getConnection();
