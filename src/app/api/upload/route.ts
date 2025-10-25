@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import getPool from '../../../../lib/database';
+import getPoolMySQL from '../../../../lib/database';
+import getPoolSupabase from '../../../../lib/database-supabase';
+
+const DEMO_MODE = process.env.DEMO_MODE === 'true' || true;
+const USE_SUPABASE = process.env.USE_SUPABASE === 'true';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,25 +35,42 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // En modo DEMO, simular que se guardó
+    if (DEMO_MODE) {
+      console.log(`📸 Modo DEMO: Foto simulada para alumno ${alumnoId}`);
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Foto simulada en modo demo' 
+      });
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Guardar imagen en la base de datos como LONGBLOB
-    const pool = getPool();
-    const connection = await pool.getConnection();
-    try {
-      await connection.execute(
-        'UPDATE usuarios_tb SET Foto_perfil = ? WHERE id_usuario = ?',
-        [buffer, alumnoId]
+    // Guardar imagen en la base de datos
+    if (USE_SUPABASE) {
+      const pool = getPoolSupabase();
+      await pool.query(
+        'UPDATE usuarios_tb SET Foto_perfil = $1 WHERE id_usuario = $2',
+        [buffer, parseInt(alumnoId)]
       );
-
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Foto subida exitosamente a la base de datos' 
-      });
-    } finally {
-      connection.release();
+    } else {
+      const pool = getPoolMySQL();
+      const connection = await pool.getConnection();
+      try {
+        await connection.execute(
+          'UPDATE usuarios_tb SET Foto_perfil = ? WHERE id_usuario = ?',
+          [buffer, alumnoId]
+        );
+      } finally {
+        connection.release();
+      }
     }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Foto subida exitosamente a la base de datos' 
+    });
 
   } catch (error) {
     console.error('Error subiendo archivo:', error);
