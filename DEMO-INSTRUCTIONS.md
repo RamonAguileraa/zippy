@@ -22,6 +22,10 @@ npm run dev
 3. **Verificar foto**: 
    - La foto aparecerá inmediatamente en la interfaz
    - Se mantendrá durante toda la sesión
+4. **Gestión de fotos**: 
+   - Ir a la página "Gestión de Fotos" (/fotos)
+   - Ver todas las fotos de los alumnos
+   - Cambiar fotos desde ahí
 
 ### 3. Demostrar Transacciones
 1. **Ver saldo**: Jesús Emilio tiene 100 monedas

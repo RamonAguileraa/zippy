@@ -53,12 +53,29 @@ let nextId = 6;
 export async function getAllAlumnosDemo(): Promise<AlumnoConFoto[]> {
   // Simular delay de red
   await new Promise(resolve => setTimeout(resolve, 100));
-  return [...demoAlumnos];
+  
+  // Actualizar URLs de fotos basándose en las fotos guardadas en memoria
+  const alumnosConFotos = demoAlumnos.map(alumno => ({
+    ...alumno,
+    foto_url: tieneFotoDemo(alumno.id_usuario) 
+      ? `/api/image/${alumno.id_usuario}` 
+      : '/zippy logo.png'
+  }));
+  
+  return alumnosConFotos;
 }
 
 export async function getAlumnoByIdDemo(id: number): Promise<AlumnoConFoto | null> {
   await new Promise(resolve => setTimeout(resolve, 100));
-  return demoAlumnos.find(a => a.id_usuario === id) || null;
+  const alumno = demoAlumnos.find(a => a.id_usuario === id);
+  if (!alumno) return null;
+  
+  return {
+    ...alumno,
+    foto_url: tieneFotoDemo(alumno.id_usuario) 
+      ? `/api/image/${alumno.id_usuario}` 
+      : '/zippy logo.png'
+  };
 }
 
 export async function updateDineroDisponibleDemo(id: number, nuevoMonto: number): Promise<boolean> {
